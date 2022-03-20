@@ -1,6 +1,12 @@
 version: "3"
+
+volumes:
+  db:
+  auth_db:
+
 services:
   api:
+    container_name: api-web
     build: ./api
     command: npm run start
     restart: unless-stopped
@@ -12,4 +18,28 @@ services:
       - PORT=3000
       - MONGO_URL=mongodb://api_db:27017/api
   api_db:
+    container_name: mongo-db
     image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - db:/data/db
+  auth:
+    container_name: auth-web
+    build: ./auth
+    command: npm run start
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    depends_on:
+      - auth_db
+    environment:
+      - PORT=3001
+      - MONGO_URL=mongodb://auth_db:27017/auth
+  auth_db:
+    container_name: mongo-auth-db
+    image: mongo:latest
+    ports:
+      - "27018:27017"
+    volumes:
+      - auth_db:/data/db
