@@ -1,4 +1,4 @@
-GET {{api-host}}/test
+GET {{auth-host}}/test
 Accept: application/json
 
 ###

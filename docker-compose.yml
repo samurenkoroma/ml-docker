@@ -5,20 +5,31 @@ volumes:
   auth_db:
 
 services:
+  frontend:
+    build: ./frontend
+    container_name: frontend-web
+    command: serve -s build -l 3000
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
   api:
     container_name: api-web
     build: ./api
     command: npm run start
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3001:3001"
     depends_on:
       - api_db
     environment:
-      - PORT=3000
+      - PORT=3001
+      - HOST=http://ml-docker.com
       - MONGO_URL=mongodb://api_db:27017/api
+      - AUTH_API_URL=http://auth:3002
   api_db:
     container_name: mongo-db
+    restart: unless-stopped
     image: mongo:latest
     ports:
       - "27017:27017"
@@ -30,16 +41,27 @@ services:
     command: npm run start
     restart: unless-stopped
     ports:
-      - "3001:3001"
+      - "3002:3002"
     depends_on:
       - auth_db
     environment:
-      - PORT=3001
+      - PORT=3002
       - MONGO_URL=mongodb://auth_db:27017/auth
+      - API_URL=http://api:3001
   auth_db:
     container_name: mongo-auth-db
+    restart: unless-stopped
     image: mongo:latest
     ports:
       - "27018:27017"
     volumes:
       - auth_db:/data/db
+  nginx:
+    image: nginx:stable-alpine
+    container_name: site-web
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/conf.d/nginx.conf
+    depends_on:
+      - frontend

@@ -1,8 +1,8 @@
 const express = require('express')
 const {connectDb} = require("./helpers/db");
-const {port} = require("./configuration");
+const {port, apiUrl} = require("./configuration");
 const app = express()
-
+const axios = require("axios")
 
 const startServer = () =>{
     app.listen(port, () => {
@@ -10,9 +10,20 @@ const startServer = () =>{
     })
 }
 
-
 app.get("/test", (req,res) => {
     res.send("auth is working")
+})
+
+app.get("/api/current-user", (req,res) => {
+    res.json({
+        id: 1234,
+        email: "foo@gmail.com"
+    })
+})
+app.get("/test-data", (req,res) => {
+    axios.get(`${apiUrl}/test`)
+        .then(response =>res.json({status: "ok", currentUser: response.data}))
+        .catch(console.log)
 })
 
 connectDb()
