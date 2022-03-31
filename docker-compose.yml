@@ -4,22 +4,24 @@ volumes:
   db:
   auth_db:
 
+networks:
+  docker-network:
+    driver: bridge
+
+
 services:
   frontend:
     build: ./frontend
     container_name: frontend-web
     command: serve -s build -l 3000
-    ports:
-      - "3000:3000"
     restart: unless-stopped
-
+    networks:
+      - docker-network
   api:
     container_name: api-web
     build: ./api
     command: npm run start
     restart: unless-stopped
-    ports:
-      - "3001:3001"
     depends_on:
       - api_db
     environment:
@@ -27,35 +29,41 @@ services:
       - HOST=http://ml-docker.com
       - MONGO_URL=mongodb://api_db:27017/api
       - AUTH_API_URL=http://auth:3002
+    networks:
+      - docker-network
   api_db:
     container_name: mongo-db
     restart: unless-stopped
     image: mongo:latest
     ports:
-      - "27017:27017"
+      - "27020:27017"
     volumes:
       - db:/data/db
+    networks:
+      - docker-network
   auth:
     container_name: auth-web
     build: ./auth
     command: npm run start
     restart: unless-stopped
-    ports:
-      - "3002:3002"
     depends_on:
       - auth_db
     environment:
       - PORT=3002
       - MONGO_URL=mongodb://auth_db:27017/auth
       - API_URL=http://api:3001
+    networks:
+      - docker-network
   auth_db:
     container_name: mongo-auth-db
     restart: unless-stopped
     image: mongo:latest
     ports:
-      - "27018:27017"
+      - "27021:27017"
     volumes:
       - auth_db:/data/db
+    networks:
+      - docker-network
   nginx:
     image: nginx:stable-alpine
     container_name: site-web
@@ -65,3 +73,7 @@ services:
       - ./nginx/nginx.prod.conf:/etc/nginx/conf.d/nginx.conf
     depends_on:
       - frontend
+      - api
+      - auth
+    networks:
+      - docker-network
